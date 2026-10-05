@@ -118,7 +118,7 @@ export default function TripDetailScreen() {
 
         {phase !== 'past' ? (
           <><Pressable style={styles.primaryButton}><Text style={styles.primaryButtonText}>＋ 导入旅行信息</Text></Pressable><Pressable onPress={() => setAddingItem(true)} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>手动添加行程</Text></Pressable></>
-        ) : <Pressable onPress={() => setCopying(true)} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>复制为新旅行</Text></Pressable>}
+        ) : <><Pressable onPress={() => setAddingItem(true)} style={styles.primaryButton}><Text style={styles.primaryButtonText}>＋ 补记行程</Text></Pressable><Pressable onPress={() => setCopying(true)} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>复制为新旅行</Text></Pressable></>}
 
         <Text style={styles.sectionTitle}>{phase === 'past' ? '旅行记录' : '行程'}</Text>
         {conflicts.length ? <View style={styles.conflictBanner}><Text style={styles.conflictTitle}>发现 {conflicts.length} 处时间冲突</Text><Text style={styles.conflictText}>{conflicts[0].first.title} 与 {conflicts[0].second.title} 的时间有重叠。锁定内容不会被自动修改。</Text></View> : null}
@@ -126,12 +126,13 @@ export default function TripDetailScreen() {
           <View style={styles.timelineCard}>{Object.entries(groupedItems).map(([date, items]) => (
             <View key={date} style={styles.dayGroup}><Text style={styles.dayTitle}>{dayLabel(date)}</Text>{items.map((item) => <TimelineItem item={item} key={item.id} onPress={() => setEditingItem(item)} />)}</View>
           ))}</View>
-        ) : <View style={styles.emptyItems}><Text style={styles.emptyTitle}>还没有安排</Text><Text style={styles.emptyText}>可以导入订单截图，或者手动添加第一项行程。</Text></View>}
+        ) : <View style={styles.emptyItems}><Text style={styles.emptyTitle}>{phase === 'past' ? '没有具体行程记录' : '还没有安排'}</Text><Text style={styles.emptyText}>{phase === 'past' ? '可以保留这份简要记录，或补记当时去过的地点与活动。' : '可以导入订单截图，或者手动添加第一项行程。'}</Text></View>}
       </ScrollView>
 
       <Modal animationType="fade" transparent visible={menuOpen} onRequestClose={() => setMenuOpen(false)}>
         <Pressable onPress={() => setMenuOpen(false)} style={styles.menuBackdrop}>
           <View style={styles.menuCard}>
+            {phase === 'past' ? <><Pressable onPress={() => { setMenuOpen(false); setAddingItem(true); }} style={styles.menuAction}><Text style={styles.menuText}>补记行程</Text></Pressable><View style={styles.menuDivider} /></> : null}
             <Pressable onPress={() => { setMenuOpen(false); setEditing(true); }} style={styles.menuAction}><Text style={styles.menuText}>编辑旅行</Text></Pressable>
             <View style={styles.menuDivider} />
             <Pressable onPress={() => { setMenuOpen(false); setCopying(true); }} style={styles.menuAction}><Text style={styles.menuText}>复制为新旅行</Text></Pressable>
