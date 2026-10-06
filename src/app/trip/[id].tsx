@@ -4,6 +4,7 @@ import { ActivityIndicator, Modal, Pressable, SafeAreaView, ScrollView, StyleShe
 
 import { TripFormSheet } from '@/components/TripFormSheet';
 import { ItineraryFormSheet } from '@/components/ItineraryFormSheet';
+import { ImportTravelSheet } from '@/components/ImportTravelSheet';
 import { findItineraryConflicts, sortItinerary } from '@/domain/itinerary';
 import type { ItineraryItem, Trip } from '@/domain/trip';
 import { getTripPhase, phaseDescription } from '@/domain/tripStatus';
@@ -44,6 +45,9 @@ export default function TripDetailScreen() {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [addingItem, setAddingItem] = useState(false);
   const [editingItem, setEditingItem] = useState<ItineraryItem>();
+  const [importing, setImporting] = useState(false);
+  const [importDraft, setImportDraft] = useState<ItineraryItem>();
+  const [uncertainFields, setUncertainFields] = useState<string[]>([]);
 
   useFocusEffect(useCallback(() => {
     if (!id) return;
@@ -93,6 +97,12 @@ export default function TripDetailScreen() {
     setTrip(next);
   }
 
+  function reviewImport(item: ItineraryItem, fields: string[]) {
+    setImporting(false);
+    setUncertainFields(fields);
+    setImportDraft(item);
+  }
+
   if (loading) return <SafeAreaView style={styles.loading}><ActivityIndicator color={accent} /></SafeAreaView>;
   if (!trip) return <SafeAreaView style={styles.loading}><Text style={styles.missing}>没有找到这段旅行</Text><Pressable onPress={() => router.replace('/')}><Text style={styles.backLink}>返回旅行列表</Text></Pressable></SafeAreaView>;
 
@@ -117,7 +127,7 @@ export default function TripDetailScreen() {
         </View>
 
         {phase !== 'past' ? (
-          <><Pressable style={styles.primaryButton}><Text style={styles.primaryButtonText}>＋ 导入旅行信息</Text></Pressable><Pressable onPress={() => setAddingItem(true)} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>手动添加行程</Text></Pressable></>
+          <><Pressable onPress={() => setImporting(true)} style={styles.primaryButton}><Text style={styles.primaryButtonText}>＋ 导入旅行信息</Text></Pressable><Pressable onPress={() => setAddingItem(true)} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>手动添加行程</Text></Pressable></>
         ) : <><Pressable onPress={() => setAddingItem(true)} style={styles.primaryButton}><Text style={styles.primaryButtonText}>＋ 补记行程</Text></Pressable><Pressable onPress={() => setCopying(true)} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>复制为新旅行</Text></Pressable></>}
 
         <Text style={styles.sectionTitle}>{phase === 'past' ? '旅行记录' : '行程'}</Text>
@@ -150,6 +160,8 @@ export default function TripDetailScreen() {
       {copying ? <TripFormSheet copy initialTrip={trip} onClose={() => setCopying(false)} onSave={saveCopy} visible /> : null}
       {addingItem ? <ItineraryFormSheet onClose={() => setAddingItem(false)} onSave={saveItem} tripEndsOn={trip.endsOn} tripStartsOn={trip.startsOn} visible /> : null}
       {editingItem ? <ItineraryFormSheet initialItem={editingItem} onClose={() => setEditingItem(undefined)} onDelete={deleteItem} onSave={saveItem} tripEndsOn={trip.endsOn} tripStartsOn={trip.startsOn} visible /> : null}
+      {importing ? <ImportTravelSheet destination={trip.destination} onClose={() => setImporting(false)} onDraft={reviewImport} tripStartsOn={trip.startsOn} visible /> : null}
+      {importDraft ? <ItineraryFormSheet heading="核对识别结果" initialItem={importDraft} notice={`以下字段暂未自动识别：${uncertainFields.join('、')}。请根据截图核对后再保存。`} onClose={() => setImportDraft(undefined)} onSave={saveItem} tripEndsOn={trip.endsOn} tripStartsOn={trip.startsOn} visible /> : null}
     </SafeAreaView>
   );
 }
