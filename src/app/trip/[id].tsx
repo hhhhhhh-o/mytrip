@@ -43,6 +43,7 @@ export default function TripDetailScreen() {
   const [editing, setEditing] = useState(false);
   const [copying, setCopying] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [choosingPastEntryMethod, setChoosingPastEntryMethod] = useState(false);
   const [addingItem, setAddingItem] = useState(false);
   const [editingItem, setEditingItem] = useState<ItineraryItem>();
   const [importing, setImporting] = useState(false);
@@ -103,6 +104,12 @@ export default function TripDetailScreen() {
     setImportDraft(item);
   }
 
+  function choosePastEntry(method: 'manual' | 'image') {
+    setChoosingPastEntryMethod(false);
+    if (method === 'manual') setAddingItem(true);
+    else setImporting(true);
+  }
+
   if (loading) return <SafeAreaView style={styles.loading}><ActivityIndicator color={accent} /></SafeAreaView>;
   if (!trip) return <SafeAreaView style={styles.loading}><Text style={styles.missing}>没有找到这段旅行</Text><Pressable onPress={() => router.replace('/')}><Text style={styles.backLink}>返回旅行列表</Text></Pressable></SafeAreaView>;
 
@@ -128,7 +135,7 @@ export default function TripDetailScreen() {
 
         {phase !== 'past' ? (
           <><Pressable onPress={() => setImporting(true)} style={styles.primaryButton}><Text style={styles.primaryButtonText}>＋ 导入旅行信息</Text></Pressable><Pressable onPress={() => setAddingItem(true)} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>手动添加行程</Text></Pressable></>
-        ) : <><Pressable onPress={() => setAddingItem(true)} style={styles.primaryButton}><Text style={styles.primaryButtonText}>＋ 补记行程</Text></Pressable><Pressable onPress={() => setCopying(true)} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>复制为新旅行</Text></Pressable></>}
+        ) : <><Pressable onPress={() => setChoosingPastEntryMethod(true)} style={styles.primaryButton}><Text style={styles.primaryButtonText}>＋ 补记行程</Text></Pressable><Pressable onPress={() => setCopying(true)} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>复制为新旅行</Text></Pressable></>}
 
         <Text style={styles.sectionTitle}>{phase === 'past' ? '旅行记录' : '行程'}</Text>
         {conflicts.length ? <View style={styles.conflictBanner}><Text style={styles.conflictTitle}>发现 {conflicts.length} 处时间冲突</Text><Text style={styles.conflictText}>{conflicts[0].first.title} 与 {conflicts[0].second.title} 的时间有重叠。锁定内容不会被自动修改。</Text></View> : null}
@@ -142,13 +149,34 @@ export default function TripDetailScreen() {
       <Modal animationType="fade" transparent visible={menuOpen} onRequestClose={() => setMenuOpen(false)}>
         <Pressable onPress={() => setMenuOpen(false)} style={styles.menuBackdrop}>
           <View style={styles.menuCard}>
-            {phase === 'past' ? <><Pressable onPress={() => { setMenuOpen(false); setAddingItem(true); }} style={styles.menuAction}><Text style={styles.menuText}>补记行程</Text></Pressable><View style={styles.menuDivider} /></> : null}
+            {phase === 'past' ? <><Pressable onPress={() => { setMenuOpen(false); setChoosingPastEntryMethod(true); }} style={styles.menuAction}><Text style={styles.menuText}>补记行程</Text></Pressable><View style={styles.menuDivider} /></> : null}
             <Pressable onPress={() => { setMenuOpen(false); setEditing(true); }} style={styles.menuAction}><Text style={styles.menuText}>编辑旅行</Text></Pressable>
             <View style={styles.menuDivider} />
             <Pressable onPress={() => { setMenuOpen(false); setCopying(true); }} style={styles.menuAction}><Text style={styles.menuText}>复制为新旅行</Text></Pressable>
             <View style={styles.menuDivider} />
             <Pressable onPress={() => { setMenuOpen(false); setConfirmingDelete(true); }} style={styles.menuAction}><Text style={styles.deleteText}>删除旅行</Text></Pressable>
           </View>
+        </Pressable>
+      </Modal>
+
+      <Modal animationType="fade" transparent visible={choosingPastEntryMethod} onRequestClose={() => setChoosingPastEntryMethod(false)}>
+        <Pressable onPress={() => setChoosingPastEntryMethod(false)} style={styles.entryBackdrop}>
+          <Pressable onPress={(event) => event.stopPropagation()} style={styles.entryCard}>
+            <Text style={styles.entryTitle}>补记行程</Text>
+            <Text style={styles.entryDescription}>选择一种方式补充这段旅行的记录。</Text>
+            <Pressable onPress={() => choosePastEntry('manual')} style={({ pressed }) => [styles.entryOption, pressed && styles.itemPressed]}>
+              <View style={styles.entryIcon}><Text style={styles.entryIconText}>＋</Text></View>
+              <View style={styles.entryOptionCopy}><Text style={styles.entryOptionTitle}>手动添加</Text><Text style={styles.entryOptionText}>自行填写时间、地点和行程内容</Text></View>
+              <Text style={styles.entryChevron}>›</Text>
+            </Pressable>
+            <View style={styles.menuDivider} />
+            <Pressable onPress={() => choosePastEntry('image')} style={({ pressed }) => [styles.entryOption, pressed && styles.itemPressed]}>
+              <View style={styles.entryIcon}><Text style={styles.entryImageIcon}>▧</Text></View>
+              <View style={styles.entryOptionCopy}><Text style={styles.entryOptionTitle}>从图片识别</Text><Text style={styles.entryOptionText}>选择订单、票根或攻略截图并核对结果</Text></View>
+              <Text style={styles.entryChevron}>›</Text>
+            </Pressable>
+            <Pressable onPress={() => setChoosingPastEntryMethod(false)} style={styles.entryCancel}><Text style={styles.entryCancelText}>取消</Text></Pressable>
+          </Pressable>
         </Pressable>
       </Modal>
 
@@ -173,5 +201,6 @@ const styles = StyleSheet.create({
   primaryButton: { minHeight: 52, borderRadius: 12, backgroundColor: accent, alignItems: 'center', justifyContent: 'center', marginTop: 16 }, primaryButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' }, secondaryButton: { minHeight: 48, borderRadius: 12, backgroundColor: '#FFFFFF', borderWidth: StyleSheet.hairlineWidth, borderColor: '#D9DCE1', alignItems: 'center', justifyContent: 'center', marginTop: 10 }, secondaryButtonText: { color: '#30343B', fontSize: 15, fontWeight: '600' }, sectionTitle: { color: '#17191E', fontSize: 23, fontWeight: '700', marginTop: 32, marginBottom: 12 },
   conflictBanner: { backgroundColor: '#FFF3DF', borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: StyleSheet.hairlineWidth, borderColor: '#E8C789' }, conflictTitle: { color: '#815512', fontSize: 14, fontWeight: '700' }, conflictText: { color: '#8B6A37', fontSize: 12, lineHeight: 18, marginTop: 4 }, timelineCard: { backgroundColor: '#FFFFFF', borderRadius: 16, paddingHorizontal: 18, borderWidth: StyleSheet.hairlineWidth, borderColor: '#DEE1E6' }, dayGroup: { paddingVertical: 18, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#ECEEF1' }, dayTitle: { color: '#555B65', fontSize: 13, fontWeight: '700', marginBottom: 16 }, timelineRow: { flexDirection: 'row', marginBottom: 22, borderRadius: 9, paddingVertical: 3 }, itemPressed: { opacity: 0.6 }, timeColumn: { width: 64 }, itemTime: { color: '#5F6570', fontSize: 13 }, dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#A8ADB6', marginTop: 12, marginLeft: 7 }, fixedDot: { backgroundColor: accent }, itemContent: { flex: 1 }, itemTopline: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 7 }, kind: { color: '#717680', fontSize: 12, fontWeight: '600' }, itemState: { color: '#8A8F98', fontSize: 12, fontWeight: '600' }, lockedState: { color: accent }, itemTitle: { color: '#17191E', fontSize: 17, lineHeight: 22, fontWeight: '700' }, itemSubtitle: { color: '#6F747D', fontSize: 14, lineHeight: 20, marginTop: 4 }, location: { color: '#505660', fontSize: 13, marginTop: 9 }, source: { color: '#9A9FA7', fontSize: 12, marginTop: 7 }, emptyItems: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 28, borderWidth: StyleSheet.hairlineWidth, borderColor: '#DEE1E6' }, emptyTitle: { color: '#24272D', fontSize: 17, fontWeight: '700' }, emptyText: { color: '#7C818A', fontSize: 14, lineHeight: 20, marginTop: 6 },
   menuBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.18)', alignItems: 'center', justifyContent: 'center', padding: 24 }, menuCard: { width: '100%', maxWidth: 360, backgroundColor: '#FFFFFF', borderRadius: 14, overflow: 'hidden' }, menuAction: { minHeight: 54, justifyContent: 'center', paddingHorizontal: 18 }, menuText: { color: '#202329', fontSize: 16 }, deleteText: { color: '#C83B35', fontSize: 16 }, menuDivider: { height: StyleSheet.hairlineWidth, backgroundColor: '#E3E5E8' },
+  entryBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.24)', justifyContent: 'flex-end', padding: 12 }, entryCard: { width: '100%', maxWidth: 520, alignSelf: 'center', backgroundColor: '#FFFFFF', borderRadius: 16, paddingTop: 20, paddingHorizontal: 16, paddingBottom: 10 }, entryTitle: { color: '#17191E', fontSize: 19, fontWeight: '700', textAlign: 'center' }, entryDescription: { color: '#7B8089', fontSize: 13, lineHeight: 18, textAlign: 'center', marginTop: 5, marginBottom: 12 }, entryOption: { minHeight: 72, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4 }, entryIcon: { width: 36, height: 36, borderRadius: 9, backgroundColor: '#EEF4FF', alignItems: 'center', justifyContent: 'center' }, entryIconText: { color: accent, fontSize: 25, lineHeight: 28, fontWeight: '400' }, entryImageIcon: { color: accent, fontSize: 21, lineHeight: 24, fontWeight: '600' }, entryOptionCopy: { flex: 1, marginLeft: 12 }, entryOptionTitle: { color: '#202329', fontSize: 16, fontWeight: '600' }, entryOptionText: { color: '#858A93', fontSize: 12, lineHeight: 17, marginTop: 3 }, entryChevron: { color: '#A5A9B0', fontSize: 28, fontWeight: '300', marginLeft: 8 }, entryCancel: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E3E5E8', marginTop: 4 }, entryCancelText: { color: accent, fontSize: 15, fontWeight: '600' },
   confirmBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.25)', alignItems: 'center', justifyContent: 'center', padding: 28 }, confirmCard: { width: '100%', maxWidth: 350, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 22 }, confirmTitle: { color: '#181A1F', fontSize: 19, fontWeight: '700' }, confirmText: { color: '#727780', fontSize: 14, lineHeight: 20, marginTop: 8, marginBottom: 20 }, deleteButton: { minHeight: 46, backgroundColor: '#C83B35', borderRadius: 10, alignItems: 'center', justifyContent: 'center' }, deleteButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' }, cancelButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: 6 }, cancelButtonText: { color: '#555B65', fontSize: 15, fontWeight: '600' },
 });
